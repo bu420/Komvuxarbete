@@ -128,11 +128,11 @@ LRESULT CALLBACK win_proc(HWND hwnd, UINT u_msg, WPARAM w_param, LPARAM l_param)
         EndPaint(hwnd, &ps);
         return 0;
 
-    /*case WM_SIZE:
-        if (win && win->onResize) {
-            win->onResize(LOWORD(lParam), HIWORD(lParam), win->userData);
-        }
-        return 0;*/
+        /*case WM_SIZE:
+            if (win && win->onResize) {
+                win->onResize(LOWORD(lParam), HIWORD(lParam), win->userData);
+            }
+            return 0;*/
     }
 
     return DefWindowProc(hwnd, u_msg, w_param, l_param);

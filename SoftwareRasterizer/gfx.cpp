@@ -36,7 +36,7 @@ struct line3d_stepper {
 
         // Calculate steps (total number of increments).
         switch (type) {
-        case line_type::any: 
+        case line_type::any:
             steps = static_cast<int>(std::max(std::abs(difference.x()), std::abs(difference.y())));
             break;
 
@@ -67,8 +67,8 @@ struct line3d_stepper {
 
 void render_triangle_from_lines(
     color_buffer& color_buf,
-    depth_buffer& depth_buf, 
-    line3d a, 
+    depth_buffer& depth_buf,
+    line3d a,
     line3d b,
     const std::function<byte3()>& pixel_shader_callback) {
     // Sort lines based on X.
@@ -83,7 +83,7 @@ void render_triangle_from_lines(
         assert(line_a.current.y() == line_b.current.y() && "Big failure.");
 
         line3d_stepper line_x(line3d{ line_a.current, line_b.current }, line_type::horizontal);
-        
+
         do {
             int x = static_cast<int>(line_x.current.x());
             int y = static_cast<int>(line_x.current.y());
@@ -94,10 +94,10 @@ void render_triangle_from_lines(
 }
 
 void komvux::render_triangle(
-	color_buffer& color_buf,
-	depth_buffer& depth_buf,
+    color_buffer& color_buf,
+    depth_buffer& depth_buf,
     std::array<vec4f, 3> positions_vec4,
-	const std::function<byte3()>& pixel_shader_callback) {
+    const std::function<byte3()>& pixel_shader_callback) {
     // W division (homogeneous clip space -> NDC space).
     for (auto& position : positions_vec4) {
         position.r() /= position.w();
@@ -118,7 +118,7 @@ void komvux::render_triangle(
         position.x() = (position.x() + 1) / 2.f * color_buf.get_width();
         position.y() = (position.y() + 1) / 2.f * color_buf.get_height();
     }
-    
+
     // Floor X and Y, otherwise there's missing pixel artifacts.
     for (auto& position : positions) {
         position.x() = std::floorf(position.x());
@@ -141,7 +141,7 @@ void komvux::render_triangle(
         render_triangle_from_lines(
             color_buf,
             depth_buf,
-            line3d{ positions[0], positions[2] }, 
+            line3d{ positions[0], positions[2] },
             line3d{ positions[1], positions[2] },
             pixel_shader_callback);
     }
@@ -150,7 +150,7 @@ void komvux::render_triangle(
         render_triangle_from_lines(
             color_buf,
             depth_buf,
-            line3d{ positions[0], positions[1] }, 
+            line3d{ positions[0], positions[1] },
             line3d{ positions[0], positions[2] },
             pixel_shader_callback);
     }
@@ -165,17 +165,17 @@ void komvux::render_triangle(
 
         // Top (flat bottom).
         render_triangle_from_lines(
-            color_buf, 
-            depth_buf, 
-            line3d{ positions[0], positions[1] }, 
-            line3d{ positions[0], position3 }, 
+            color_buf,
+            depth_buf,
+            line3d{ positions[0], positions[1] },
+            line3d{ positions[0], position3 },
             pixel_shader_callback);
 
         // Bottom (flat top).
         render_triangle_from_lines(
             color_buf,
             depth_buf,
-            line3d{ positions[1], positions[2] }, 
+            line3d{ positions[1], positions[2] },
             line3d{ position3, positions[2] },
             pixel_shader_callback);
     }
