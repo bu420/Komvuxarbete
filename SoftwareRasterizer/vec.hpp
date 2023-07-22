@@ -71,6 +71,8 @@
 #define KOMVUX_VEC_END }
 
 namespace komvux {
+    class mat4;
+
     // vec2
 
     KOMVUX_VEC_BEGIN(2);
@@ -125,6 +127,22 @@ namespace komvux {
         KOMVUX_METHOD(g, 1);
         KOMVUX_METHOD(b, 2);
         KOMVUX_METHOD(a, 3);
+
+        vec4<T> operator * (const mat4& m) const {
+            vec4<T> result;
+            for (int y = 0; y < 4; y++) {
+                float i = 0;
+                for (int x = 0; x < 4; x++) {
+                    i += m[x][y] * (*this)[x];
+                }
+                result[y] = i;
+            }
+            return result;
+        }
+
+        vec4<T>& operator *= (const mat4& m) {
+            return (*this = *this * m);
+        }
     KOMVUX_VEC_END;
 
     using vec4f = vec4<float>;

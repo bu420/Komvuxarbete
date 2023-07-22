@@ -2,11 +2,15 @@
 
 #include <vector>
 #include <array>
+#include <optional>
 #include <functional>
 
 #include "math.hpp"
 
 namespace komvux {
+	template<typename T> using optional_reference = 
+		std::optional<std::reference_wrapper<T>>;
+
 	struct byte3 {
 		unsigned char x, y, z;
 	};
@@ -41,8 +45,8 @@ namespace komvux {
 	using depth_buffer = buffer2d<float>;
 
 	void render_triangle(
-		color_buffer& color_buf,
-		depth_buffer& depth_buf,
+		optional_reference<color_buffer> color_buf,
+		optional_reference<depth_buffer> depth_buf,
 		std::array<vec4f, 3> positions,
-		const std::function<byte3()>& pixel_shader_callback);
+		std::function<byte3()> pixel_shader_callback);
 }

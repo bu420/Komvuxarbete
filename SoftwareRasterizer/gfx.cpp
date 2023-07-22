@@ -66,11 +66,11 @@ struct line3d_stepper {
 };
 
 void render_triangle_from_lines(
-    color_buffer& color_buf,
-    depth_buffer& depth_buf,
+    optional_reference<color_buffer> color_buf,
+    optional_reference<depth_buffer> depth_buf,
     line3d a,
     line3d b,
-    const std::function<byte3()>& pixel_shader_callback) {
+    std::function<byte3()> pixel_shader_callback) {
     // Sort lines based on X.
     if (a.start.x() > b.start.x()) {
         std::swap(a, b);
@@ -88,16 +88,20 @@ void render_triangle_from_lines(
             int x = static_cast<int>(line_x.current.x());
             int y = static_cast<int>(line_x.current.y());
 
-            color_buf.at(x, y) = pixel_shader_callback();
+            if (color_buf.has_value()) {
+                color_buf.value().get().at(x, y) = pixel_shader_callback();
+            }
         } while (line_x.step());
     } while (line_a.step() && line_b.step());
 }
 
 void komvux::render_triangle(
-    color_buffer& color_buf,
-    depth_buffer& depth_buf,
+    optional_reference<color_buffer> color_buf,
+    optional_reference<depth_buffer> depth_buf,
     std::array<vec4f, 3> positions_vec4,
-    const std::function<byte3()>& pixel_shader_callback) {
+    std::function<byte3()> pixel_shader_callback) {
+    assert(color_buf.has_value() || depth_buf.has_value() && "Either a color buffer, depth buffer or both must be present.");
+
     // W division (homogeneous clip space -> NDC space).
     for (auto& position : positions_vec4) {
         position.r() /= position.w();
@@ -112,11 +116,16 @@ void komvux::render_triangle(
         vec3f(positions_vec4[2].x(), positions_vec4[2].y(), positions_vec4[2].z())
     };
 
+    const vec2i framebuffer_size(
+        color_buf.has_value() ?
+        vec2i(color_buf.value().get().get_width(), color_buf.value().get().get_height()) :
+        vec2i(depth_buf.value().get().get_width(), depth_buf.value().get().get_height()));
+
     // Viewport transformation. 
     // Scale from [-1, 1] to color buffer size.
     for (auto& position : positions) {
-        position.x() = (position.x() + 1) / 2.f * color_buf.get_width();
-        position.y() = (position.y() + 1) / 2.f * color_buf.get_height();
+        position.x() = (position.x() + 1) / 2.f * framebuffer_size.x();
+        position.y() = (position.y() + 1) / 2.f * framebuffer_size.y();
     }
 
     // Floor X and Y, otherwise there's missing pixel artifacts.
