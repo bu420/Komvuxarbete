@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <array>
 #include <functional>
 
 #include "math.hpp"
@@ -15,6 +16,10 @@ namespace komvux {
 		buffer2d(int width, int height) :
 			width(width), height(height) {
 			data.resize(width * height);
+		}
+
+		void clear(T value) {
+			std::fill(data.begin(), data.end(), value);
 		}
 
 		int get_width() const { return width; }
@@ -38,8 +43,6 @@ namespace komvux {
 	void render_triangle(
 		color_buffer& color_buf,
 		depth_buffer& depth_buf,
-		const vec4f& pos0,
-		const vec4f& pos1,
-		const vec4f& pos2,
+		std::array<vec4f, 3> positions,
 		const std::function<byte3()>& pixel_shader_callback);
 }

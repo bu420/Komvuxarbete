@@ -25,8 +25,8 @@ mat4 mat4::translate(const vec3f& delta_pos) const {
 }
 
 mat4 mat4::rotate_x(float angle) const {
-	float s = std::sinf(angle);
-	float c = std::cosf(angle);
+	float s = std::sin(angle);
+	float c = std::cos(angle);
 
 	mat4 x(1);
 	x[1][1] = c;
@@ -38,8 +38,8 @@ mat4 mat4::rotate_x(float angle) const {
 }
 
 mat4 mat4::rotate_y(float angle) const {
-	float s = std::sinf(angle);
-	float c = std::cosf(angle);
+	float s = std::sin(angle);
+	float c = std::cos(angle);
 
 	mat4 y(1);
 	y[0][0] = c;
@@ -51,8 +51,8 @@ mat4 mat4::rotate_y(float angle) const {
 }
 
 mat4 mat4::rotate_z(float angle) const {
-	float s = std::sinf(angle);
-	float c = std::cosf(angle);
+	float s = std::sin(angle);
+	float c = std::cos(angle);
 
 	mat4 z(1);
 
@@ -201,7 +201,7 @@ mat4 komvux::look_at(vec3f pos, vec3f target, vec3f up) {
 mat4 komvux::perspective(float aspect, float fov, float near, float far) {
 	mat4 m;
 
-	float half_tan = std::tanf(fov / 2);
+	float half_tan = std::tan(fov / 2);
 
 	m[0][0] = 1 / (half_tan * aspect);
 	m[1][1] = 1 / half_tan;
