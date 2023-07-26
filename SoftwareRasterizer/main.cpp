@@ -3,6 +3,8 @@
 #include "platform.hpp"
 
 #include <numbers>
+#include <algorithm>
+#include <iostream>
 
 #define W 600
 #define H 600
@@ -17,13 +19,48 @@ int main() {
     kv::color_buffer color_buf(W, H);
     kv::depth_buffer depth_buf(W, H);
 
-    const kv::vec3f cube_vertices[36] = {
-        {-0.5f,-0.5f,-0.5f}, {-0.5f,0.5f,-0.5f}, {0.5f,0.5f,-0.5f},   {-0.5f,-0.5f,-0.5f}, {0.5f,0.5f,-0.5f},   {0.5f,-0.5f,-0.5f},
-        {0.5f,-0.5f,-0.5f},  {0.5f,0.5f,-0.5f},  {0.5f,0.5f,0.5f},    {0.5f,-0.5f,-0.5f},  {0.5f,0.5f,0.5f},    {0.5f,-0.5f,0.5f},
-        {0.5f,-0.5f,0.5f},   {0.5f,0.5f,0.5f},   {-0.5f,0.5f,0.5f},   {0.5f,-0.5f,0.5f},   {-0.5f,0.5f,0.5f},   {-0.5f,-0.5f,0.5f},
-        {-0.5f,-0.5f,0.5f},  {-0.5f,0.5f,0.5f},  {-0.5f,0.5f,-0.5f},  {-0.5f,-0.5f,0.5f},  {-0.5f,0.5f,-0.5f},  {-0.5f,-0.5f,-0.5f},
-        {-0.5f,0.5f,-0.5f},  {-0.5f,0.5f,0.5f},  {0.5f,0.5f,0.5f},    {-0.5f,0.5f,-0.5f},  {0.5f,0.5f,0.5f},    {0.5f,0.5f,-0.5f},
-        {0.5f,-0.5f,0.5f},   {-0.5f,-0.5f,0.5f}, {-0.5f,-0.5f,-0.5f}, {0.5f,-0.5f,0.5f},   {-0.5f,-0.5f,-0.5f}, {0.5f,-0.5f,-0.5f}
+    const kv::vertex cube_vertices[36] = {
+        kv::vertex({-0.5f,-0.5f,-0.5f,1.f},kv::attribute(kv::vec3f(255.f,0.f,0.f))),
+        kv::vertex({-0.5f,0.5f,-0.5f,1.f},kv::attribute(kv::vec3f(255.f,0.f,0.f))),
+        kv::vertex({0.5f,0.5f,-0.5f,1.f},kv::attribute(kv::vec3f(255.f,0.f,0.f))),
+        kv::vertex({-0.5f,-0.5f,-0.5f,1.f},kv::attribute(kv::vec3f(255.f,0.f,0.f))),
+        kv::vertex({0.5f,0.5f,-0.5f,1.f},kv::attribute(kv::vec3f(255.f,0.f,0.f))),
+        kv::vertex({0.5f,-0.5f,-0.5f,1.f},kv::attribute(kv::vec3f(255.f,0.f,0.f))),
+
+        kv::vertex({0.5f,-0.5f,-0.5f,1.f},kv::attribute(kv::vec3f(0.f,255.f,0.f))),
+        kv::vertex({0.5f,0.5f,-0.5f,1.f},kv::attribute(kv::vec3f(0.f,255.f,0.f))),
+        kv::vertex({0.5f,0.5f,0.5f,1.f},kv::attribute(kv::vec3f(0.f,255.f,0.f))),
+        kv::vertex({0.5f,-0.5f,-0.5f,1.f},kv::attribute(kv::vec3f(0.f,255.f,0.f))),
+        kv::vertex({0.5f,0.5f,0.5f,1.f},kv::attribute(kv::vec3f(0.f,255.f,0.f))),
+        kv::vertex({0.5f,-0.5f,0.5f,1.f},kv::attribute(kv::vec3f(0.f,255.f,0.f))),
+
+        kv::vertex({0.5f,-0.5f,0.5f,1.f},kv::attribute(kv::vec3f(0.f,0.f,255.f))),
+        kv::vertex({0.5f,0.5f,0.5f,1.f},kv::attribute(kv::vec3f(0.f,0.f,255.f))),
+        kv::vertex({-0.5f,0.5f,0.5f,1.f},kv::attribute(kv::vec3f(0.f,0.f,255.f))),
+        kv::vertex({0.5f,-0.5f,0.5f,1.f},kv::attribute(kv::vec3f(0.f,0.f,255.f))),
+        kv::vertex({-0.5f,0.5f,0.5f,1.f},kv::attribute(kv::vec3f(0.f,0.f,255.f))),
+        kv::vertex({-0.5f,-0.5f,0.5f,1.f},kv::attribute(kv::vec3f(0.f,0.f,255.f))),
+
+        kv::vertex({-0.5f,-0.5f,0.5f,1.f},kv::attribute(kv::vec3f(255.f,0.f,255.f))),
+        kv::vertex({-0.5f,0.5f,0.5f,1.f},kv::attribute(kv::vec3f(255.f,0.f,255.f))),
+        kv::vertex({-0.5f,0.5f,-0.5f,1.f},kv::attribute(kv::vec3f(255.f,0.f,255.f))),
+        kv::vertex({-0.5f,-0.5f,0.5f,1.f},kv::attribute(kv::vec3f(255.f,0.f,255.f))),
+        kv::vertex({-0.5f,0.5f,-0.5f,1.f},kv::attribute(kv::vec3f(255.f,0.f,255.f))),
+        kv::vertex({-0.5f,-0.5f,-0.5f,1.f},kv::attribute(kv::vec3f(255.f,0.f,255.f))),
+
+        kv::vertex({-0.5f,0.5f,-0.5f,1.f},kv::attribute(kv::vec3f(0.f,255.f,255.f))),
+        kv::vertex({-0.5f,0.5f,0.5f,1.f},kv::attribute(kv::vec3f(0.f,255.f,255.f))),
+        kv::vertex({0.5f,0.5f,0.5f,1.f},kv::attribute(kv::vec3f(0.f,255.f,255.f))),
+        kv::vertex({-0.5f,0.5f,-0.5f,1.f},kv::attribute(kv::vec3f(0.f,255.f,255.f))),
+        kv::vertex({0.5f,0.5f,0.5f,1.f},kv::attribute(kv::vec3f(0.f,255.f,255.f))),
+        kv::vertex({0.5f,0.5f,-0.5f,1.f},kv::attribute(kv::vec3f(0.f,255.f,255.f))),
+
+        kv::vertex({0.5f,-0.5f,0.5f,1.f},kv::attribute(kv::vec3f(255.f,255.f,0.f))),
+        kv::vertex({-0.5f,-0.5f,0.5f,1.f},kv::attribute(kv::vec3f(255.f,255.f,0.f))),
+        kv::vertex({-0.5f,-0.5f,-0.5f,1.f},kv::attribute(kv::vec3f(255.f,255.f,0.f))),
+        kv::vertex({0.5f,-0.5f,0.5f,1.f},kv::attribute(kv::vec3f(255.f,255.f,0.f))),
+        kv::vertex({-0.5f,-0.5f,-0.5f,1.f},kv::attribute(kv::vec3f(255.f,255.f,0.f))),
+        kv::vertex({0.5f,-0.5f,-0.5f,1.f},kv::attribute(kv::vec3f(255.f,255.f,0.f)))
     };
 
     const kv::mat4 projection = kv::perspective(
@@ -39,7 +76,7 @@ int main() {
         win.poll_events();
 
         color_buf.clear(kv::byte3{ 255, 255, 255 });
-        depth_buf.clear(0);
+        depth_buf.clear(1);
 
         // Model matrix with a rotation animation.
         kv::mat4 model(1);
@@ -50,19 +87,38 @@ int main() {
 
         // For each of of the cube's triangles.
         for (int i = 0; i < 12; i++) {
-            std::array<kv::vec4f, 3> vertices;
+            std::array<kv::vertex, 3> vertices;
 
             for (int j = 0; j < 3; j++) {
-                kv::vec3f vertex = cube_vertices[i * 3 + j];
-                vertices[j] = { vertex.x(), vertex.y(), vertex.z(), 1.f };
+                vertices[j] = cube_vertices[i * 3 + j];
 
                 // Multiply position with MVP matrix, world space -> clip space.
-                vertices[j] *= mvp;
+                vertices[j].position *= mvp;
             }
 
             kv::render_triangle(color_buf, depth_buf, vertices,
-                []() -> kv::byte3 {
-                    return { 255, 0, 255 };
+                [](const kv::vertex& vertex) -> kv::byte3 {
+                    kv::vec4f pos = vertex.position;
+                    
+                    kv::vec3f color(
+                        vertex.attributes[0].data[0],
+                        vertex.attributes[0].data[1],
+                        vertex.attributes[0].data[2]);
+
+                    color *= std::sin(H - (pos.y() / H)) * 1.5;
+                    color += H / 4.f;
+
+                    if (pos.x() > 300) {
+                        color.r() = 255;
+                    }
+
+                    color *= std::cos(pos.x() / W);
+
+                    return { 
+                        static_cast<unsigned char>(color.x()), 
+                        static_cast<unsigned char>(color.y()), 
+                        static_cast<unsigned char>(color.z())
+                    };
                 });
         }
 

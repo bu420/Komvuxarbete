@@ -3,10 +3,6 @@
 #include "vec.hpp"
 
 namespace komvux {
-    template <typename T> T lerp(T a, T b, T amount) {
-        return a * ((T)1 - amount) + (b * amount);
-    }
-
     class mat4 {
     public:
         mat4(float init = 0);

@@ -1,12 +1,12 @@
 #include "gfx.hpp"
 
-#include <iostream>
-
 using namespace komvux;
 
+#include <algorithm>
+
 struct line3d {
-    vec3f start;
-    vec3f end;
+    vertex start;
+    vertex end;
 };
 
 enum class line_type {
@@ -16,23 +16,22 @@ enum class line_type {
 };
 
 struct line3d_stepper {
-    vec3f current;
-    vec3f increment;
+    vertex current;
+    vertex increment;
 
-    int steps = -1;
-    int i = 0;
-    line_type type;
+    int steps;
+    int i;
 
-    line3d_stepper(line3d line, line_type type) : type(type) {
+    line3d_stepper(line3d line, line_type type) : steps(0), i(0) {
         // Round X and Y to nearest integer (pixel position).
-        line.start.x() = std::round(line.start.x());
-        line.start.y() = std::round(line.start.y());
-        line.end.x() = std::round(line.end.x());
-        line.end.y() = std::round(line.end.y());
+        line.start.position.x() = std::round(line.start.position.x());
+        line.start.position.y() = std::round(line.start.position.y());
+        line.end.position.x() = std::round(line.end.position.x());
+        line.end.position.y() = std::round(line.end.position.y());
 
         current = line.start;
 
-        vec3f difference(line.end - line.start);
+        vec4f difference(line.end.position - line.start.position);
 
         // Calculate steps (total number of increments).
         switch (type) {
@@ -50,7 +49,20 @@ struct line3d_stepper {
 
         // Calculate how much to increment each step.
         if (steps > 0) {
-            increment = difference / static_cast<float>(steps);
+            increment.position = difference / static_cast<float>(steps);
+
+            assert(line.start.attribute_count == line.end.attribute_count);
+
+            for (int i = 0; i < line.start.attribute_count; i++) {
+                assert(line.start.attributes[i].count == line.end.attributes[i].count);
+
+                for (int j = 0; j < line.start.attributes[i].count; j++) {
+                    increment.attributes[i].data[j] =
+                        (line.end.attributes[i].data[j] - line.start.attributes[i].data[j]) / steps;
+
+                    increment.attributes[i].count = line.start.attributes[i].count;
+                }
+            }
         }
     }
 
@@ -60,61 +72,67 @@ struct line3d_stepper {
         }
 
         i++;
-        current += increment;
+
+        // Increment position.
+        current.position += increment.position;
+
+        // Increment attributes.
+        for (int j = 0; j < current.attribute_count; j++) {
+            for (int k = 0; k < current.attributes[j].count; k++) {
+                current.attributes[j].data[k] += increment.attributes[j].data[k];
+            }
+        }
+
         return true;
     }
 };
 
-void render_triangle_from_lines(
-    optional_reference<color_buffer> color_buf,
-    optional_reference<depth_buffer> depth_buf,
-    line3d a,
-    line3d b,
-    std::function<byte3()> pixel_shader_callback) {
-    // Sort lines based on X.
-    if (a.start.x() > b.start.x()) {
-        std::swap(a, b);
+attribute attribute::lerp(const attribute& other, float amount) const {
+    assert(this->count == other.count && "Attribute sizes must match.");
+
+    attribute result;
+    for (int i = 0; i < this->count; i++) {
+        result.data[i] = std::lerp(this->data[i], other.data[i], amount);
+    }
+    result.count = this->count;
+
+    return result;
+}
+
+vertex vertex::lerp(const vertex& other, float amount) const {
+    assert(this->attribute_count == other.attribute_count && "Number of attributes must match.");
+
+    vertex result;
+
+    // Interpolate position.
+    for (int i = 0; i < 4; i++) {
+        result.position[i] = std::lerp(this->position[i], other.position[i], amount);
     }
 
-    line3d_stepper line_a(a, line_type::vertical);
-    line3d_stepper line_b(b, line_type::vertical);
+    // Interpolate attributes.
+    for (int i = 0; i < this->attribute_count; i++) {
+        result.attributes[i] = this->attributes[i].lerp(other.attributes[i], amount);
+    }
+    result.attribute_count = this->attribute_count;
 
-    do {
-        assert(line_a.current.y() == line_b.current.y() && "Big failure.");
-
-        line3d_stepper line_x(line3d{ line_a.current, line_b.current }, line_type::horizontal);
-
-        do {
-            int x = static_cast<int>(line_x.current.x());
-            int y = static_cast<int>(line_x.current.y());
-
-            if (color_buf.has_value()) {
-                color_buf.value().get().at(x, y) = pixel_shader_callback();
-            }
-        } while (line_x.step());
-    } while (line_a.step() && line_b.step());
+    return result;
 }
 
 void komvux::render_triangle(
     optional_reference<color_buffer> color_buf,
     optional_reference<depth_buffer> depth_buf,
-    std::array<vec4f, 3> positions_vec4,
-    std::function<byte3()> pixel_shader_callback) {
+    std::array<vertex, 3> vertices,
+    std::function<byte3(const vertex&)> pixel_shader_callback) {
     assert(color_buf.has_value() || depth_buf.has_value() && "Either a color buffer, depth buffer or both must be present.");
 
     // W division (homogeneous clip space -> NDC space).
-    for (auto& position : positions_vec4) {
-        position.r() /= position.w();
-        position.g() /= position.w();
-        position.b() /= position.w();
-    }
+    for (auto& vertex : vertices) {
+        auto& pos = vertex.position;
 
-    // Discard W component since we do not need it anymore.
-    std::array<vec3f, 3> positions = {
-        vec3f(positions_vec4[0].x(), positions_vec4[0].y(), positions_vec4[0].z()),
-        vec3f(positions_vec4[1].x(), positions_vec4[1].y(), positions_vec4[1].z()),
-        vec3f(positions_vec4[2].x(), positions_vec4[2].y(), positions_vec4[2].z())
-    };
+        pos.x() /= pos.w();
+        pos.y() /= pos.w();
+        pos.z() /= pos.w();
+    }
 
     const vec2i framebuffer_size(
         color_buf.has_value() ?
@@ -123,69 +141,82 @@ void komvux::render_triangle(
 
     // Viewport transformation. 
     // Scale from [-1, 1] to color buffer size.
-    for (auto& position : positions) {
-        position.x() = (position.x() + 1) / 2.f * framebuffer_size.x();
-        position.y() = (position.y() + 1) / 2.f * framebuffer_size.y();
+    for (auto& vertex : vertices) {
+        auto& pos = vertex.position;
+
+        pos.x() = (pos.x() + 1) / 2.f * framebuffer_size.x();
+        pos.y() = (pos.y() + 1) / 2.f * framebuffer_size.y();
     }
 
-    // Floor X and Y, otherwise there's missing pixel artifacts.
-    for (auto& position : positions) {
-        position.x() = std::floorf(position.x());
-        position.y() = std::floorf(position.y());
-    }
+    vec4f& pos0 = vertices[0].position;
+    vec4f& pos1 = vertices[1].position;
+    vec4f& pos2 = vertices[2].position;
 
     // Sort vertices by Y.
-    if (positions[0].y() > positions[1].y()) {
-        std::swap(positions[0], positions[1]);
+    if (pos0.y() > pos1.y()) {
+        std::swap(pos0, pos1);
     }
-    if (positions[0].y() > positions[2].y()) {
-        std::swap(positions[0], positions[2]);
+    if (pos0.y() > pos2.y()) {
+        std::swap(pos0, pos2);
     }
-    if (positions[1].y() > positions[2].y()) {
-        std::swap(positions[1], positions[2]);
+    if (pos1.y() > pos2.y()) {
+        std::swap(pos1, pos2);
     }
 
+    auto render_triangle_from_lines = [&](line3d a, line3d b) {
+        // Sort lines based on X.
+        /*if (a.start.position.x() > b.start.position.x()) {
+            std::swap(a, b);
+        }*/
+
+        line3d_stepper line_a(a, line_type::vertical);
+        line3d_stepper line_b(b, line_type::vertical);
+
+        do {
+            assert(line_a.current.position.y() == line_b.current.position.y() && "Big failure.");
+
+            line3d_stepper line_x(line3d{ line_a.current, line_b.current }, line_type::horizontal);
+
+            do {
+                int x = static_cast<int>(line_x.current.position.x());
+                int y = static_cast<int>(line_x.current.position.y());
+
+                if (depth_buf.has_value()) {
+                    float z = line_x.current.position.z();
+
+                    if (z < depth_buf.value().get().at(x, y)) {
+                        depth_buf.value().get().at(x, y) = z;
+                    }
+                    // If pixel is invisible, skip color buffer update.
+                    else {
+                        continue;
+                    }
+                }
+
+                if (color_buf.has_value()) {
+                    color_buf.value().get().at(x, y) = pixel_shader_callback(line_x.current);
+                }
+            } while (line_x.step());
+        } while (line_a.step() && line_b.step());
+    };
+
     // Check if the top of the triangle is flat.
-    if (positions[0].y() == positions[1].y()) {
-        render_triangle_from_lines(
-            color_buf,
-            depth_buf,
-            line3d{ positions[0], positions[2] },
-            line3d{ positions[1], positions[2] },
-            pixel_shader_callback);
+    if (pos0.y() == pos1.y()) {
+        render_triangle_from_lines(line3d{ vertices[0], vertices[2] }, line3d{ vertices[1], vertices[2] });
     }
     // Check if the bottom is flat.
-    else if (positions[1].y() == positions[2].y()) {
-        render_triangle_from_lines(
-            color_buf,
-            depth_buf,
-            line3d{ positions[0], positions[1] },
-            line3d{ positions[0], positions[2] },
-            pixel_shader_callback);
+    else if (pos1.y() == pos2.y()) {
+        render_triangle_from_lines(line3d{ vertices[0], vertices[1] }, line3d{ vertices[0], vertices[2] });
     }
     // Else split into two smaller triangles.
     else {
-        float alpha_split = (positions[1].y() - positions[0].y()) / (positions[2].y() - positions[0].y());
-
-        vec3f position3(
-            lerp(positions[0].x(), positions[2].x(), alpha_split),
-            positions[1].y(),
-            lerp(positions[0].z(), positions[2].z(), alpha_split));
+        float alpha_split = (pos1.y() - pos0.y()) / (pos2.y() - pos0.y());
+        vertex vertex3 = vertices[0].lerp(vertices[2], alpha_split);
 
         // Top (flat bottom).
-        render_triangle_from_lines(
-            color_buf,
-            depth_buf,
-            line3d{ positions[0], positions[1] },
-            line3d{ positions[0], position3 },
-            pixel_shader_callback);
+        render_triangle_from_lines(line3d{ vertices[0], vertices[1] }, line3d{ vertices[0], vertex3 });
 
         // Bottom (flat top).
-        render_triangle_from_lines(
-            color_buf,
-            depth_buf,
-            line3d{ positions[1], positions[2] },
-            line3d{ position3, positions[2] },
-            pixel_shader_callback);
+        render_triangle_from_lines(line3d{ vertices[1], vertices[2] }, line3d{ vertex3, vertices[2] });
     }
 }

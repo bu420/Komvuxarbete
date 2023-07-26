@@ -44,9 +44,37 @@ namespace komvux {
 	using color_buffer = buffer2d<byte3>;
 	using depth_buffer = buffer2d<float>;
 
-	void render_triangle(
-		optional_reference<color_buffer> color_buf,
-		optional_reference<depth_buffer> depth_buf,
-		std::array<vec4f, 3> positions,
-		std::function<byte3()> pixel_shader_callback);
+	struct attribute {
+		vec4f data;
+		int count;
+
+        attribute() : count(0) {}
+        attribute(float value) : data{ value, 0.f, 0.f, 0.f }, count(1) {}
+        attribute(const vec2f& value) : data{ value.x(), value.y(), 0.f, 0.f }, count(2) {}
+        attribute(const vec3f& value) : data{ value.x(), value.y(), value.z(), 0.f }, count(3) {}
+        attribute(const vec4f& value) : data{ value.x(), value.y(), value.z(), value.w() }, count(4) {}
+
+		attribute lerp(const attribute& other, float amount) const;
+	};
+
+	struct vertex {
+		vec4f position;
+
+		std::array<attribute, 4> attributes;
+		int attribute_count;
+    
+        vertex() = default;
+
+        template <typename... T> vertex(const vec4f& position, T... attributes) : 
+            position(position), attributes{ attributes... }, attribute_count(sizeof...(T)) {
+        }
+
+		vertex lerp(const vertex& other, float amount) const;
+	};
+    
+    void render_triangle(
+        optional_reference<color_buffer> color_buf,
+        optional_reference<depth_buffer> depth_buf,
+        std::array<vertex, 3> vertices,
+        std::function<byte3(const vertex&)> pixel_shader_callback);
 }
